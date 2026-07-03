@@ -50,15 +50,19 @@ RUN git clone --recurse-submodules https://github.com/NVIDIA/Isaac-GR00T.git "${
 WORKDIR ${GR00T_ROOT}
 RUN uv sync --python 3.10
 
+# uv-managed venvs don't ship pip, so use `uv pip` (targeting the GR00T venv
+# explicitly) rather than "<venv>/bin/python -m pip".
+ENV VIRTUAL_ENV=${GROOT_VENV} \
+    PATH="${GROOT_VENV}/bin:${PATH}"
+
 # ── This repo (compsteer), including ManiSkill via requirements.txt ─────
 # (no known dependency conflict between ManiSkill and GR00T's own deps)
 WORKDIR /workspace/compsteer
 COPY requirements.txt setup.py ./
-RUN "${GROOT_VENV}/bin/python" -m pip install --no-cache-dir -r requirements.txt
+RUN uv pip install --python "${GROOT_VENV}/bin/python" --no-cache-dir -r requirements.txt
 COPY . .
-RUN "${GROOT_VENV}/bin/python" -m pip install --no-cache-dir -e .
+RUN uv pip install --python "${GROOT_VENV}/bin/python" --no-cache-dir -e .
 
-ENV PATH="${GROOT_VENV}/bin:${PATH}"
 WORKDIR /workspace/compsteer
 
 CMD ["/bin/bash"]
