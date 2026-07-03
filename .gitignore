@@ -208,3 +208,4 @@ __marimo__/
 
 # Private research notes (never commit)
 private/
+docker_images/
