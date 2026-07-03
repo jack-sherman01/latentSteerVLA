@@ -86,7 +86,17 @@ BINDS=(-B "${REPO}:/workspace/compsteer")
 BINDS+=(-B "${ROBOCASA_DATA}:/workspace/Isaac-GR00T/gr00t/eval/sim/robocasa/robocasa_uv")
 BINDS+=(-B "${HF_CACHE}:/opt/hf_cache")
 
-APP_ENV=(--env "HF_HOME=/opt/hf_cache" --env "UV_LINK_MODE=copy")
+if [ -z "${HF_TOKEN:-}" ]; then
+    echo "ERROR: HF_TOKEN is not set. GR00T-N1.7-3B's vision-language backbone"
+    echo "(nvidia/Cosmos-Reason2-2B) is a gated HF repo — request access at"
+    echo "https://huggingface.co/nvidia/Cosmos-Reason2-2B, create a token at"
+    echo "https://huggingface.co/settings/tokens, then:"
+    echo "  export HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx"
+    echo "before running sbatch (it's inherited into the job's environment)."
+    exit 1
+fi
+
+APP_ENV=(--env "HF_HOME=/opt/hf_cache" --env "UV_LINK_MODE=copy" --env "HF_TOKEN=${HF_TOKEN}")
 
 echo "======================================"
 echo "GR00T x RoboCasa raw eval"
@@ -158,9 +168,17 @@ echo "Done. Results -> $REPO/$RESULTS_DIR"
 
 # ── Optional: pre-warm the HF checkpoint cache from the login node ────────
 # If compute nodes lack internet access, run this once on fe01 BEFORE
-# submitting, so the job above finds the checkpoint already cached:
+# submitting, so the job above finds the checkpoint already cached. Requires
+# HF_TOKEN (see the check above — GR00T-N1.7-3B's vision-language backbone,
+# nvidia/Cosmos-Reason2-2B, is a gated repo):
 #   module load apptainer-1.4.1
 #   export HF_HOME=/work/hezhang/hf_cache
+#   export HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx
 #   apptainer exec --nv -B /work/hezhang/hf_cache:/opt/hf_cache \
-#       --env HF_HOME=/opt/hf_cache /work/hezhang/docker_images/compsteer-groot.sif \
-#       python -c "from huggingface_hub import snapshot_download; snapshot_download('nvidia/GR00T-N1.7-3B')"
+#       --env HF_HOME=/opt/hf_cache --env HF_TOKEN="$HF_TOKEN" \
+#       /work/hezhang/docker_images/compsteer-groot.sif \
+#       python -c "
+#   from huggingface_hub import snapshot_download
+#   snapshot_download('nvidia/GR00T-N1.7-3B')
+#   snapshot_download('nvidia/Cosmos-Reason2-2B')
+#   "
