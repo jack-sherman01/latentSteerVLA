@@ -1,0 +1,84 @@
+# Embodiment registry for CompSteer experiments
+# Each entry: ManiSkill robot_uid, GR00T embodiment_tag, action_dim, DoF, gripper_type
+#
+# Split convention:
+#   train: used to build the steering library  (ATE fine-tuning)
+#   test:  held-out for zero-shot eval (splits B and D)
+
+embodiments:
+  # ── Training embodiments ──────────────────────────────────────────────
+  panda:
+    robot_uid: "panda"                  # ManiSkill robot_uid
+    groot_tag: "LIBERO_PANDA"           # Pre-registered GR00T embodiment tag
+    action_dim: 7                       # joint position DoF
+    dof: 7
+    gripper_type: "parallel_jaw"
+    gripper_dof: 1
+    total_action_dim: 8                 # 7 arm + 1 gripper
+    split: train
+    spec:                               # For f_emb robot spec encoder
+      joint_limits_low:  [-2.90, -1.76, -2.90, -3.07, -2.90, -0.02, -2.90]
+      joint_limits_high: [ 2.90,  1.76,  2.90, -0.07,  2.90,  3.75,  2.90]
+      max_reach_m: 0.855
+      payload_kg: 3.0
+
+  xarm6:
+    robot_uid: "xarm6_robotiq85"
+    groot_tag: "NEW_EMBODIMENT"
+    action_dim: 6
+    dof: 6
+    gripper_type: "robotiq_85"
+    gripper_dof: 1
+    total_action_dim: 7
+    split: train
+    spec:
+      joint_limits_low:  [-6.28, -2.09, -3.93, -6.28, -2.09, -6.28]
+      joint_limits_high: [ 6.28,  2.09,  3.93,  6.28,  2.09,  6.28]
+      max_reach_m: 0.700
+      payload_kg: 5.0
+
+  ur5e:
+    robot_uid: "ur5e_robotiq85"
+    groot_tag: "NEW_EMBODIMENT"
+    action_dim: 6
+    dof: 6
+    gripper_type: "robotiq_85"
+    gripper_dof: 1
+    total_action_dim: 7
+    split: train
+    spec:
+      joint_limits_low:  [-6.28, -6.28, -3.14, -6.28, -6.28, -6.28]
+      joint_limits_high: [ 6.28,  6.28,  3.14,  6.28,  6.28,  6.28]
+      max_reach_m: 0.850
+      payload_kg: 5.0
+
+  widowx:
+    robot_uid: "widowx"
+    groot_tag: "OXE_WIDOWX"             # Pre-registered
+    action_dim: 6
+    dof: 6
+    gripper_type: "parallel_jaw"
+    gripper_dof: 1
+    total_action_dim: 7
+    split: train
+    spec:
+      joint_limits_low:  [-1.57, -1.57, -1.57, -1.57, -1.57, -1.57]
+      joint_limits_high: [ 1.57,  1.57,  1.57,  1.57,  1.57,  1.57]
+      max_reach_m: 0.500
+      payload_kg: 0.75
+
+  # ── Test embodiments (held-out for zero-shot eval) ────────────────────
+  fetch:
+    robot_uid: "fetch"
+    groot_tag: "NEW_EMBODIMENT"
+    action_dim: 8                       # 7-DoF arm + torso
+    dof: 8
+    gripper_type: "parallel_jaw"
+    gripper_dof: 1
+    total_action_dim: 9
+    split: test
+    spec:
+      joint_limits_low:  [-1.60, -1.22, -3.14, -2.25, -3.14, -2.09, -3.14, 0.0]
+      joint_limits_high: [ 1.60,  1.22,  3.14,  2.25,  3.14,  2.09,  3.14, 0.38]
+      max_reach_m: 1.10
+      payload_kg: 6.0

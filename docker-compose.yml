@@ -1,0 +1,107 @@
+# CompSteer / GR00T benchmark stack.
+#
+# Two services, mirroring Isaac-GR00T's own client/server split:
+#   groot-server    — GR00T model lives here. Used directly (in-process) for
+#                      ManiSkill rollouts, and as the ZMQ policy server for
+#                      RoboCasa rollouts.
+#   robocasa-client — isolated RoboCasa venv (robosuite conflicts with
+#                      GR00T's deps upstream) that drives simulation and
+#                      talks to groot-server over ZMQ.
+#
+# Quick start:
+#   docker compose build
+#
+#   # ManiSkill (in-process, no server needed)
+#   docker compose run --rm groot-server \
+#       python scripts/eval_groot_maniskill.py --embodiment panda --tasks pick_cube
+#
+#   # RoboCasa (client/server)
+#   docker compose up -d groot-server-robocasa
+#   docker compose run --rm robocasa-client scripts/setup_robocasa_env.sh
+#   docker compose run --rm robocasa-client \
+#       python scripts/eval_groot_robocasa.py --tasks open_drawer --policy_host groot-server-robocasa
+
+x-gpu: &gpu
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+
+x-common-volumes: &common-volumes
+  - ./data:/workspace/compsteer/data
+  - ./checkpoints:/workspace/compsteer/checkpoints
+  - ./results:/workspace/compsteer/results
+  - ./steering_library:/workspace/compsteer/steering_library
+  - ./configs:/workspace/compsteer/configs
+  - hf_cache:/root/.cache/huggingface
+
+services:
+  # Main GR00T + ManiSkill environment. Also used as the RoboCasa policy
+  # server (override `command`, or use the groot-server-robocasa alias below).
+  groot-server:
+    build: .
+    image: compsteer-groot:latest
+    <<: *gpu
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    environment:
+      - HF_HOME=/root/.cache/huggingface
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    volumes: *common-volumes
+    stdin_open: true
+    tty: true
+    command: ["/bin/bash"]
+
+  # Same image/config as groot-server, run as a persistent policy server for
+  # RoboCasa clients. Kept as a separate service so it can be `up -d`'d
+  # without occupying the interactive groot-server shell.
+  groot-server-robocasa:
+    build: .
+    image: compsteer-groot:latest
+    <<: *gpu
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    environment:
+      - HF_HOME=/root/.cache/huggingface
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    volumes: *common-volumes
+    ports:
+      - "5555:5555"
+    entrypoint: ["bash", "scripts/run_groot_server.sh"]
+    command: ["nvidia/GR00T-N1-2B", "ROBOCASA_PANDA_OMRON", "5555"]
+
+  # Isolated RoboCasa venv + kitchen assets, driving rollout_policy.py
+  # against groot-server-robocasa. GPU access is optional here (only used
+  # for local rendering acceleration) but left on for simplicity.
+  robocasa-client:
+    build: .
+    image: compsteer-groot:latest
+    <<: *gpu
+    ipc: host
+    depends_on:
+      - groot-server-robocasa
+    environment:
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    volumes:
+      - ./results:/workspace/compsteer/results
+      - ./configs:/workspace/compsteer/configs
+      # Persist the isolated RoboCasa venv (+ kitchen assets, which robocasa
+      # typically installs under its own package dir inside the venv) across
+      # container recreation instead of baking ~10GB into the image. Mounted
+      # on robocasa_uv specifically — NOT the parent robocasa/ dir, which
+      # would shadow setup_RoboCasa.sh baked into the image.
+      - robocasa_data:/workspace/Isaac-GR00T/gr00t/eval/sim/robocasa/robocasa_uv
+    stdin_open: true
+    tty: true
+    command: ["/bin/bash"]
+
+volumes:
+  hf_cache:
+  robocasa_data:

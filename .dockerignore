@@ -1,0 +1,12 @@
+.git
+__pycache__/
+*.pyc
+*.egg-info/
+private/
+
+# Large / generated artifacts — mounted as volumes instead, not baked into the image
+data/
+checkpoints/
+results/
+steering_library/
+logs/

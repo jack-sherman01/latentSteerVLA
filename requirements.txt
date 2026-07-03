@@ -1,0 +1,41 @@
+# Core
+torch>=2.1.0
+torchvision>=0.16.0
+numpy>=1.24.0
+scipy>=1.11.0
+scikit-learn>=1.3.0
+
+# Simulation
+gymnasium>=0.29.0
+mani_skill>=3.0.0
+
+# Data / VLA ecosystem
+lerobot>=0.1.0
+transformers>=4.40.0
+einops>=0.7.0
+
+# Config
+omegaconf>=2.3.0
+pyyaml>=6.0
+
+# Logging / utils
+tqdm>=4.66.0
+tensorboard>=2.15.0
+wandb>=0.16.0
+
+# Data IO
+h5py>=3.9.0
+imageio>=2.31.0
+opencv-python>=4.8.0
+
+# Matrix factorization
+nimfa>=1.4.0        # NMF library
+
+# Install GR00T separately:
+#   pip install git+https://github.com/NVIDIA/Isaac-GR00T.git
+# Install RDT-1B separately:
+#   pip install git+https://github.com/TeleHuman/Align-Then-Steer.git
+#
+# For GR00T x ManiSkill/RoboCasa benchmark evaluation, prefer the provided
+# Docker setup (see README.md) — it handles GR00T's uv-managed environment
+# and RoboCasa's isolated venv (robosuite conflicts with GR00T's deps).

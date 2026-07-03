@@ -1,0 +1,137 @@
+# CompSteer main configuration
+# Override individual fields on the command line via OmegaConf:
+#   python scripts/02_train_vae.py embodiment=panda task=pick_cube
+
+# ── Paths ─────────────────────────────────────────────────────────────────
+paths:
+  data_root: "./data"                  # Root for all collected demos
+  library_root: "./steering_library"   # Root for steering vectors + factorization
+  checkpoint_root: "./checkpoints"     # VAE + encoder checkpoints
+  results_root: "./results"            # Eval results (JSON + plots)
+  log_root: "./logs"
+
+# ── Base VLA models ───────────────────────────────────────────────────────
+models:
+  groot:
+    hf_path: "nvidia/GR00T-N1-2B"     # HuggingFace model ID
+    hidden_size: 1536                  # DiT hidden dim (N1-2B)
+    action_horizon: 16                 # Action chunk length
+    num_inference_steps: 10            # Flow matching denoising steps
+    device: "cuda"
+    dtype: "bfloat16"
+  groot_1b:
+    hf_path: "nvidia/GR00T-N1-1B"
+    hidden_size: 1024
+    action_horizon: 16
+    num_inference_steps: 10
+    device: "cuda"
+    dtype: "bfloat16"
+  rdt1b:
+    hf_path: "robotics-diffusion-transformer/rdt-1b"
+    hidden_size: 1536
+    action_horizon: 64
+    num_inference_steps: 5
+    device: "cuda"
+    dtype: "float32"
+
+# ── Active model (used by all scripts unless overridden) ──────────────────
+active_model: "groot"
+
+# ── Demo collection ───────────────────────────────────────────────────────
+collection:
+  num_demos: 50                        # Demos per (embodiment, task) pair
+  num_envs: 8                          # Parallel ManiSkill envs (GPU)
+  obs_mode: "rgbd"
+  image_size: [224, 224]
+  cameras: ["base_camera", "hand_camera"]
+  max_steps_per_episode: 500
+  save_failed: false                   # Discard failed episodes
+  seed: 42
+
+# ── VAE training (align stage) ────────────────────────────────────────────
+vae:
+  latent_dim: 256                      # z dimensionality
+  hidden_dims: [512, 512]              # Encoder/decoder hidden layers
+  action_horizon: 16                   # Chunk length to encode
+  beta: 1.0                            # KL weight (reverse KL)
+  recon_weight: 1.0                    # Reconstruction loss weight
+  lr: 3.0e-4
+  batch_size: 128
+  num_epochs: 100
+  warmup_steps: 500
+  grad_clip: 1.0
+  source_stats_path: null              # Path to pre-computed source latent stats
+                                       # (null = estimate from source demos)
+
+# ── Steering vector extraction ────────────────────────────────────────────
+extraction:
+  num_source_demos: 200                # Source demos for μ_s estimation
+  extraction_timestep: 0.0            # Use t=0 (clean actions) for extraction
+  use_vae_mean: true                   # Use μ_q (not sampled z) for vector
+
+# ── Factorization ─────────────────────────────────────────────────────────
+factorize:
+  method: "svd"                        # svd | nmf | learned
+  rank: 16                             # k — number of components
+  # SVD specific
+  svd_full_matrices: false
+  # NMF specific
+  nmf_max_iter: 500
+  nmf_init: "nndsvda"
+  # Learned decomposition
+  learned_hidden_dim: 256
+  learned_lr: 1.0e-3
+  learned_epochs: 200
+  learned_recon_weight: 1.0
+  learned_ortho_weight: 0.1            # Encourage Δe ⊥ Δt
+
+# ── Retrieval encoders ────────────────────────────────────────────────────
+encoders:
+  # f_emb: robot spec → Δe
+  f_emb:
+    input_dim: 32                      # Robot spec embedding dim (see embodiment_specs.py)
+    hidden_dims: [128, 128]
+    output_dim: 16                     # Must match factorize.rank
+    lr: 1.0e-3
+    epochs: 200
+    dropout: 0.1
+  # g_lang: task text → Δt (linear projection on top of frozen T5)
+  g_lang:
+    t5_model: "t5-base"
+    t5_hidden: 768
+    output_dim: 16                     # Must match factorize.rank
+    lr: 5.0e-4
+    epochs: 100
+    freeze_t5: true
+
+# ── Inference-time composition ────────────────────────────────────────────
+compose:
+  alpha: 1.0                           # Embodiment weight (fixed default)
+  beta: 1.0                            # Task weight (fixed default)
+  adaptive_weights: false              # Learn per-query α, β via attention
+  injection_mode: "hidden"             # hidden | velocity
+  # Step-dependent injection schedule λ(t)
+  schedule: "cosine"                   # constant | cosine | linear | early_only
+  schedule_peak: 1.0                   # Max λ value
+  early_only_cutoff: 0.5              # Only inject for t > cutoff (early_only mode)
+
+# ── Evaluation ────────────────────────────────────────────────────────────
+eval:
+  num_episodes: 50                     # Per (embodiment, task) pair
+  num_envs: 8                          # Parallel eval envs
+  seed: 100                            # Different from collection seed
+  render_videos: true
+  video_freq: 5                        # Save every Nth episode video
+  metrics:
+    - success_rate
+    - episode_length
+    - trajectory_smoothness            # Mean jerk
+    - force_profile                    # If F/T sensor available
+
+# ── Ablation sweep ────────────────────────────────────────────────────────
+ablation:
+  factorization_methods: ["svd", "nmf", "learned"]
+  ranks: [4, 8, 16, 32]
+  library_sizes: [5, 10, 20, 30]       # Number of (e,t) training pairs
+  schedules: ["constant", "cosine", "linear", "early_only"]
+  retrieval_modes: ["nearest_neighbor", "f_emb_encoder"]

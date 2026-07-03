@@ -1,0 +1,140 @@
+# RoboCasa atomic task registry for GR00T evaluation.
+#
+# `env_class` is combined into an Isaac-GR00T sim env name as:
+#     robocasa_panda_omron/<env_class>_PandaOmron_Env
+# following the official GR00T <-> RoboCasa integration
+# (gr00t/eval/sim/robocasa/ in the Isaac-GR00T repo).
+#
+# NOTE: env_class names are RoboCasa's atomic single-stage task classes
+# (robocasa.environments.kitchen.single_stage). Verify against the installed
+# robocasa version before a real eval run — task names have shifted across
+# RoboCasa releases:
+#     ${ROBOCASA_VENV}/bin/python -c "import robosuite; print(list(robosuite.ALL_ENVIRONMENTS))"
+#
+# Split convention mirrors configs/tasks.yaml:
+#   train: used during development / sanity checks
+#   test:  held out, for reporting generalization numbers
+
+robocasa_tasks:
+  # ── Drawer / cabinet / door ───────────────────────────────────────────
+  open_drawer:
+    env_class: "OpenDrawer"
+    description: "Open the drawer by pulling its handle"
+    category: "articulated"
+    split: train
+    max_episode_steps: 500
+
+  close_drawer:
+    env_class: "CloseDrawer"
+    description: "Close the open drawer by pushing it shut"
+    category: "articulated"
+    split: train
+    max_episode_steps: 500
+
+  open_single_door:
+    env_class: "OpenSingleDoor"
+    description: "Open the cabinet door by pulling its handle"
+    category: "articulated"
+    split: train
+    max_episode_steps: 500
+
+  close_single_door:
+    env_class: "CloseSingleDoor"
+    description: "Close the open cabinet door"
+    category: "articulated"
+    split: test
+    max_episode_steps: 500
+
+  # ── Appliances ─────────────────────────────────────────────────────────
+  turn_on_microwave:
+    env_class: "TurnOnMicrowave"
+    description: "Press the button to turn on the microwave"
+    category: "appliance"
+    split: train
+    max_episode_steps: 500
+
+  turn_off_microwave:
+    env_class: "TurnOffMicrowave"
+    description: "Press the button to turn off the microwave"
+    category: "appliance"
+    split: test
+    max_episode_steps: 500
+
+  turn_on_stove:
+    env_class: "TurnOnStove"
+    description: "Turn the stove knob to turn on the burner"
+    category: "appliance"
+    split: train
+    max_episode_steps: 500
+
+  turn_off_stove:
+    env_class: "TurnOffStove"
+    description: "Turn the stove knob to turn off the burner"
+    category: "appliance"
+    split: test
+    max_episode_steps: 500
+
+  turn_on_sink_faucet:
+    env_class: "TurnOnSinkFaucet"
+    description: "Turn the sink faucet handle to start the water"
+    category: "appliance"
+    split: train
+    max_episode_steps: 500
+
+  turn_off_sink_faucet:
+    env_class: "TurnOffSinkFaucet"
+    description: "Turn the sink faucet handle to stop the water"
+    category: "appliance"
+    split: test
+    max_episode_steps: 500
+
+  # ── Coffee ────────────────────────────────────────────────────────────
+  coffee_setup_mug:
+    env_class: "CoffeeSetupMug"
+    description: "Place the mug under the coffee machine spout"
+    category: "coffee"
+    split: train
+    max_episode_steps: 700
+
+  coffee_press_button:
+    env_class: "CoffeePressButton"
+    description: "Press the button to start the coffee machine"
+    category: "coffee"
+    split: train
+    max_episode_steps: 500
+
+  coffee_serve_mug:
+    env_class: "CoffeeServeMug"
+    description: "Take the mug from under the coffee machine and place it on the counter"
+    category: "coffee"
+    split: test
+    max_episode_steps: 700
+
+  # ── Pick and place ────────────────────────────────────────────────────
+  pnp_counter_to_cab:
+    env_class: "PnPCounterToCab"
+    description: "Pick the object from the counter and place it in the cabinet"
+    category: "pick_place"
+    split: train
+    max_episode_steps: 700
+
+  pnp_cab_to_counter:
+    env_class: "PnPCabToCounter"
+    description: "Pick the object from the cabinet and place it on the counter"
+    category: "pick_place"
+    split: train
+    max_episode_steps: 700
+
+  pnp_counter_to_sink:
+    env_class: "PnPCounterToSink"
+    description: "Pick the object from the counter and place it in the sink"
+    category: "pick_place"
+    split: test
+    max_episode_steps: 700
+
+  pnp_counter_to_microwave:
+    env_class: "PnPCounterToMicrowave"
+    description: "Pick the object from the counter and place it in the microwave"
+    category: "pick_place"
+    split: test
+    max_episode_steps: 700

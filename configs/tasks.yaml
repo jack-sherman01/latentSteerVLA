@@ -1,0 +1,87 @@
+# Task registry for CompSteer experiments
+# Split convention:
+#   train: used in the steering library
+#   test:  held-out for zero-shot task generalization (splits C and D)
+
+tasks:
+  # ── Training tasks ────────────────────────────────────────────────────
+  pick_cube:
+    maniskill_env: "PickCube-v1"
+    description: "Pick up the red cube and lift it above the table"
+    category: "pick_place"
+    split: train
+    max_steps: 200
+    success_threshold: 0.05            # metres, end-effector to target
+
+  stack_cube:
+    maniskill_env: "StackCube-v1"
+    description: "Pick up the green cube and stack it on top of the red cube"
+    category: "pick_place"
+    split: train
+    max_steps: 300
+    success_threshold: 0.05
+
+  peg_insertion:
+    maniskill_env: "PegInsertionSide-v1"
+    description: "Insert the peg into the hole on the box from the side"
+    category: "insertion"
+    split: train
+    max_steps: 400
+    success_threshold: 0.01
+
+  push_t:
+    maniskill_env: "PushT-v1"
+    description: "Push the T-shaped block to align with the target marker"
+    category: "pushing"
+    split: train
+    max_steps: 300
+    success_threshold: 0.05
+
+  open_drawer:
+    maniskill_env: "OpenCabinetDrawer-v1"
+    description: "Grasp the drawer handle and pull the drawer open"
+    category: "articulated"
+    split: train
+    max_steps: 400
+    success_threshold: 0.1             # joint displacement
+
+  pick_ycb:
+    maniskill_env: "PickSingleYCB-v1"
+    description: "Pick up the object and place it in the bin"
+    category: "pick_place"
+    split: train
+    max_steps: 300
+    success_threshold: 0.05
+
+  # ── Test tasks (held-out) ─────────────────────────────────────────────
+  turn_faucet:
+    maniskill_env: "TurnFaucet-v1"
+    description: "Turn the faucet handle to open the water flow"
+    category: "articulated"
+    split: test
+    max_steps: 400
+    success_threshold: 0.1
+
+  plug_charger:
+    maniskill_env: "PlugCharger-v1"
+    description: "Plug the charger into the socket on the wall"
+    category: "insertion"
+    split: test
+    max_steps: 500
+    success_threshold: 0.005
+
+  assemble_kit:
+    maniskill_env: "AssemblingKits-v1"
+    description: "Pick the object and place it into the matching hole in the kit"
+    category: "pick_place"
+    split: test
+    max_steps: 400
+    success_threshold: 0.01
+
+  pick_clutter:
+    maniskill_env: "PickClutterYCB-v1"
+    description: "Pick the target object from a pile of cluttered objects"
+    category: "pick_place"
+    split: test
+    max_steps: 400
+    success_threshold: 0.05
