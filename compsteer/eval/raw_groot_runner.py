@@ -60,7 +60,7 @@ class RawGr00tManiSkillRunner:
 
     Usage:
         runner = RawGr00tManiSkillRunner(
-            model_path="nvidia/GR00T-N1-2B",
+            model_path="nvidia/GR00T-N1.7-3B",
             embodiment_tag="NEW_EMBODIMENT",
             robot_uid="panda",
             env_id="PickCube-v1",

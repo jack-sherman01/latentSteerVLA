@@ -6,11 +6,16 @@
 # Usage:
 #   scripts/run_groot_server.sh [model_path] [embodiment_tag] [port]
 #
-# Defaults match configs/compsteer.yaml's active_model (groot / N1-2B).
+# Default model: nvidia/GR00T-N1.7-3B, NOT the N1-2B referenced elsewhere in
+# this repo's configs/compsteer.yaml. The cloned Isaac-GR00T main branch
+# (no version pin in the Dockerfile) only registers the "Gr00tN1d7"
+# architecture with transformers' AutoModel — older N1-2B checkpoints
+# declare model_type "gr00t_n1", which this code no longer recognizes at
+# all (confirmed: KeyError: 'gr00t_n1', CONFIG_MAPPING only has Gr00tN1d7).
 set -euo pipefail
 
 GR00T_ROOT="${GR00T_ROOT:-/workspace/Isaac-GR00T}"
-MODEL_PATH="${1:-nvidia/GR00T-N1-2B}"
+MODEL_PATH="${1:-nvidia/GR00T-N1.7-3B}"
 EMBODIMENT_TAG="${2:-ROBOCASA_PANDA_OMRON}"
 PORT="${3:-5555}"
 

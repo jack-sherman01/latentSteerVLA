@@ -37,7 +37,7 @@
 #
 # Known unverified assumptions (check the job log for these on first run):
 #   - Compute nodes on this cluster may not have internet access, in which
-#     case the GR00T-N1-2B checkpoint download from Hugging Face will hang
+#     case the GR00T-N1.7-3B checkpoint download from Hugging Face will hang
 #     or fail. If so, pre-download it on the login node into $HF_CACHE
 #     first (see bottom of this file) and re-run with the cache warm.
 #   - The RoboCasa venv setup (scripts/setup_robocasa_env.sh) does its own
@@ -57,7 +57,9 @@ ROBOCASA_DATA="/work/hezhang/robocasa_data"   # persistent isolated venv + ~10GB
 HF_CACHE="/work/hezhang/hf_cache"             # persistent GR00T checkpoint cache (NOT $HOME — quota)
 SCRATCH="/tmp/${SLURM_JOB_ID:-manual}"        # node-local scratch for apptainer's own tmp/cache
 
-MODEL_PATH="nvidia/GR00T-N1-2B"
+MODEL_PATH="nvidia/GR00T-N1.7-3B"   # NOT N1-2B — this repo's cloned Isaac-GR00T
+                                     # main branch only registers the Gr00tN1d7
+                                     # architecture; older checkpoints 404 on load
 EMBODIMENT_TAG="ROBOCASA_PANDA_OMRON"
 PORT=5555
 
@@ -161,4 +163,4 @@ echo "Done. Results -> $REPO/$RESULTS_DIR"
 #   export HF_HOME=/work/hezhang/hf_cache
 #   apptainer exec --nv -B /work/hezhang/hf_cache:/opt/hf_cache \
 #       --env HF_HOME=/opt/hf_cache /work/hezhang/docker_images/compsteer-groot.sif \
-#       python -c "from huggingface_hub import snapshot_download; snapshot_download('nvidia/GR00T-N1-2B')"
+#       python -c "from huggingface_hub import snapshot_download; snapshot_download('nvidia/GR00T-N1.7-3B')"
