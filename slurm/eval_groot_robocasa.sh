@@ -2,11 +2,11 @@
 #SBATCH --job-name=groot_robocasa_eval
 #SBATCH --output=logs/robocasa_eval_%j.out
 #SBATCH --error=logs/robocasa_eval_%j.err
-#SBATCH --time=04:00:00
+#SBATCH --time=24:00:00
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=32G
+#SBATCH --mem=46G
 #SBATCH --gres=gpu:1
-#SBATCH --partition=CHANGE_ME
+#SBATCH --partition=gpuv
 # ^ set to a real partition name for this cluster, e.g.:
 #     sinfo -o "%P %G %l %D %N"
 #
