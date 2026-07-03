@@ -22,7 +22,11 @@ echo "  Port:       $PORT"
 echo "======================================"
 
 cd "$GR00T_ROOT"
-exec uv run python gr00t/eval/run_gr00t_server.py \
+# --no-sync: the venv was already fully built during the image build (uv
+# sync). Skip uv's automatic re-sync/rebuild check here — it tries to touch
+# gr00t.egg-info timestamps, which fails under Apptainer's default read-only
+# squashfs image filesystem.
+exec uv run --no-sync python gr00t/eval/run_gr00t_server.py \
     --model-path "$MODEL_PATH" \
     --embodiment-tag "$EMBODIMENT_TAG" \
     --use-sim-policy-wrapper \

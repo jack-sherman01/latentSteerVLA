@@ -98,7 +98,7 @@ echo "======================================"
 
 # ── 1. Start the GR00T policy server in the background ────────────────────
 SERVER_LOG="logs/robocasa_eval_${SLURM_JOB_ID:-manual}_server.log"
-apptainer exec --nv "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
+apptainer exec --nv --writable-tmpfs "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
     bash /workspace/compsteer/scripts/run_groot_server.sh "$MODEL_PATH" "$EMBODIMENT_TAG" "$PORT" \
     > "$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
@@ -139,12 +139,12 @@ fi
 sleep 30
 
 # ── 3. One-time (idempotent) RoboCasa venv + kitchen asset setup ──────────
-apptainer exec --nv "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
+apptainer exec --nv --writable-tmpfs "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
     bash /workspace/compsteer/scripts/setup_robocasa_env.sh
 
 # ── 4. Run the RoboCasa client eval across the requested tasks ────────────
 RESULTS_DIR="results/raw_groot/robocasa_${SLURM_JOB_ID:-manual}"
-apptainer exec --nv "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
+apptainer exec --nv --writable-tmpfs "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
     python /workspace/compsteer/scripts/eval_groot_robocasa.py \
         --tasks "${TASKS[@]}" \
         --n_episodes "$N_EPISODES" \
