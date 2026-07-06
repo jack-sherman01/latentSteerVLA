@@ -85,9 +85,17 @@ mkdir -p "$APPTAINER_TMPDIR" "$APPTAINER_CACHEDIR"
 
 # Bind the live repo checkout over the image's baked-in copy (so config/
 # script edits don't require rebuilding the .sif), the persistent RoboCasa
-# venv+assets dir, and the persistent HF checkpoint cache.
+# venv+assets cache, and the persistent HF checkpoint cache.
+#
+# ROBOCASA_DATA is bound at /opt/robocasa_persist, NOT at robocasa_uv itself:
+# setup_RoboCasa.sh (Isaac-GR00T's own script) unconditionally does
+# `rm -rf robocasa_uv` on every invocation, and rm can't remove an active
+# mount point ("Device or resource busy" — confirmed on a real run). See
+# scripts/setup_robocasa_env.sh for how it builds into the ephemeral path on
+# a cache miss, then copies into this persistent dir; and symlinks back out
+# of it on a cache hit.
 BINDS=(-B "${REPO}:/workspace/compsteer")
-BINDS+=(-B "${ROBOCASA_DATA}:/workspace/Isaac-GR00T/gr00t/eval/sim/robocasa/robocasa_uv")
+BINDS+=(-B "${ROBOCASA_DATA}:/opt/robocasa_persist")
 BINDS+=(-B "${HF_CACHE}:/opt/hf_cache")
 
 # NOTE: unlike N1.7-3B (which needed a token for the gated nvidia/Cosmos-Reason2-2B
@@ -96,7 +104,7 @@ BINDS+=(-B "${HF_CACHE}:/opt/hf_cache")
 # "nvidia/Eagle-Block2A-2B-v2" name in its config.json is just descriptive
 # metadata about the backbone architecture, not a separate download. HF_TOKEN
 # is passed through below only in case a private/gated mirror is ever used.
-APP_ENV=(--env "HF_HOME=/opt/hf_cache" --env "UV_LINK_MODE=copy")
+APP_ENV=(--env "HF_HOME=/opt/hf_cache" --env "UV_LINK_MODE=copy" --env "ROBOCASA_PERSIST_DIR=/opt/robocasa_persist")
 if [ -n "${HF_TOKEN:-}" ]; then
     APP_ENV+=(--env "HF_TOKEN=${HF_TOKEN}")
 fi
