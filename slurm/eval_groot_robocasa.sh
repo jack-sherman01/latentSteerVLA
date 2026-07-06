@@ -101,6 +101,19 @@ if [ -n "${HF_TOKEN:-}" ]; then
     APP_ENV+=(--env "HF_TOKEN=${HF_TOKEN}")
 fi
 
+# All `apptainer exec` calls below use --cleanenv: without it, apptainer passes
+# the host shell's environment into the container by default, including any
+# HPC environment-module vars like CUDA_HOME pointing at a host path (e.g.
+# /opt/share/libs/intel/nvidia/cuda-12.8.0/) that doesn't exist inside the
+# image. transformers opportunistically imports deepspeed at import time,
+# which shells out to "$CUDA_HOME/bin/nvcc" to check compatibility — with a
+# leaked host CUDA_HOME this is a FileNotFoundError that crashes the server
+# before it even gets to load the model (confirmed on a real run). The image
+# already has its own complete CUDA 12.8 toolchain baked in, so it doesn't
+# need anything from the host environment. --cleanenv only blocks automatic
+# passthrough of the calling shell's environment; the explicit --env flags in
+# APP_ENV above still apply underneath it.
+
 echo "======================================"
 echo "GR00T x RoboCasa raw eval"
 echo "  Node:       $(hostname)"
@@ -113,7 +126,7 @@ echo "======================================"
 
 # ── 1. Start the GR00T policy server in the background ────────────────────
 SERVER_LOG="logs/robocasa_eval_${SLURM_JOB_ID:-manual}_server.log"
-apptainer exec --nv --writable-tmpfs "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
+apptainer exec --nv --cleanenv --writable-tmpfs "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
     bash /workspace/compsteer/scripts/run_groot_server.sh "$MODEL_PATH" "$EMBODIMENT_TAG" "$PORT" \
     > "$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
@@ -154,12 +167,12 @@ fi
 sleep 30
 
 # ── 3. One-time (idempotent) RoboCasa venv + kitchen asset setup ──────────
-apptainer exec --nv --writable-tmpfs "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
+apptainer exec --nv --cleanenv --writable-tmpfs "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
     bash /workspace/compsteer/scripts/setup_robocasa_env.sh
 
 # ── 4. Run the RoboCasa client eval across the requested tasks ────────────
 RESULTS_DIR="results/raw_groot/robocasa_${SLURM_JOB_ID:-manual}"
-apptainer exec --nv --writable-tmpfs "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
+apptainer exec --nv --cleanenv --writable-tmpfs "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
     python /workspace/compsteer/scripts/eval_groot_robocasa.py \
         --tasks "${TASKS[@]}" \
         --n_episodes "$N_EPISODES" \
