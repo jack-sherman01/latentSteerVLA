@@ -46,7 +46,12 @@ ENV PATH="/root/.local/bin:${PATH}"
 WORKDIR /workspace
 
 # ── Isaac-GR00T ───────────────────────────────────────────────────────────
-RUN git clone --recurse-submodules https://github.com/NVIDIA/Isaac-GR00T.git "${GR00T_ROOT}"
+# Pinned to n1.6.1-release: the tag that introduced EmbodimentTag.ROBOCASA_PANDA_OMRON
+# (model_type "Gr00tN1d6") and pairs with the nvidia/GR00T-N1.6-3B checkpoint, which is
+# the only pretrained GR00T release whose statistics.json actually includes
+# robocasa_panda_omron (confirmed via HF: N1.7-3B's does not, despite the tag existing
+# in its EmbodimentTag enum — see scripts/run_groot_server.sh for the full story).
+RUN git clone --recurse-submodules --branch n1.6.1-release https://github.com/NVIDIA/Isaac-GR00T.git "${GR00T_ROOT}"
 WORKDIR ${GR00T_ROOT}
 RUN uv sync --python 3.10
 

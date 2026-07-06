@@ -34,7 +34,7 @@ from compsteer.steering.vector_library import SteeringLibrary
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Evaluate CompSteer on all splits")
     p.add_argument("--backbone",        default="groot", choices=["groot", "groot_1b", "rdt1b"])
-    p.add_argument("--model_path",      default="nvidia/GR00T-N1-2B")
+    p.add_argument("--model_path",      default="nvidia/GR00T-N1.6-3B")  # NOT N1-2B, see scripts/run_groot_server.sh
     p.add_argument("--library_root",    default="steering_library")
     p.add_argument("--rank",            type=int,   default=16)
     p.add_argument("--factorize_method",default="svd", choices=["svd", "nmf", "learned"])

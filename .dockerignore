@@ -10,3 +10,4 @@ checkpoints/
 results/
 steering_library/
 logs/
+docker_images/

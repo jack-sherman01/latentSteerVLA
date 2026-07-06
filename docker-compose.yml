@@ -75,7 +75,7 @@ services:
     ports:
       - "5555:5555"
     entrypoint: ["bash", "scripts/run_groot_server.sh"]
-    command: ["nvidia/GR00T-N1-2B", "ROBOCASA_PANDA_OMRON", "5555"]
+    command: ["nvidia/GR00T-N1.6-3B", "ROBOCASA_PANDA_OMRON", "5555"]
 
   # Isolated RoboCasa venv + kitchen assets, driving rollout_policy.py
   # against groot-server-robocasa. GPU access is optional here (only used

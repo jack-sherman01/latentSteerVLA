@@ -6,16 +6,28 @@
 # Usage:
 #   scripts/run_groot_server.sh [model_path] [embodiment_tag] [port]
 #
-# Default model: nvidia/GR00T-N1.7-3B, NOT the N1-2B referenced elsewhere in
-# this repo's configs/compsteer.yaml. The cloned Isaac-GR00T main branch
-# (no version pin in the Dockerfile) only registers the "Gr00tN1d7"
-# architecture with transformers' AutoModel — older N1-2B checkpoints
-# declare model_type "gr00t_n1", which this code no longer recognizes at
-# all (confirmed: KeyError: 'gr00t_n1', CONFIG_MAPPING only has Gr00tN1d7).
+# Default model: nvidia/GR00T-N1.6-3B, NOT N1-2B (referenced elsewhere in this
+# repo's configs/compsteer.yaml for the separate ManiSkill CompSteer eval) and
+# NOT N1.7-3B (an earlier version of this script used it as a workaround for
+# an unrelated loader bug, see below). Isaac-GR00T is pinned to n1.6.1-release
+# in the Dockerfile specifically to pair with this checkpoint.
+#
+# Why N1.6-3B: EmbodimentTag.ROBOCASA_PANDA_OMRON is only in each checkpoint's
+# actually-*trained* embodiment set (checkpoint's statistics.json — a global
+# embodiment_id.json listing the tag exists in every release since n1.6, but
+# that's just a shared ID vocabulary, not a claim the checkpoint was trained
+# on it). Verified via HF:
+#   nvidia/GR00T-N1.6-3B  statistics.json -> behavior_r1_pro, gr1, robocasa_panda_omron  (yes)
+#   nvidia/GR00T-N1.7-3B  statistics.json -> xdof*, oxe_droid*, real_g1*, real_r1_pro_sharpa*  (no robocasa)
+# N1.7-3B was originally chosen here only to dodge a *different* problem:
+# Isaac-GR00T's unpinned main branch dropped the "gr00t_n1" model_type (used
+# by N1-2B) in favor of "Gr00tN1d7" — confirmed KeyError: 'gr00t_n1' when
+# loading N1-2B against unpinned main. Pinning to n1.6.1-release (model_type
+# "Gr00tN1d6") avoids that problem too, without giving up RoboCasa support.
 set -euo pipefail
 
 GR00T_ROOT="${GR00T_ROOT:-/workspace/Isaac-GR00T}"
-MODEL_PATH="${1:-nvidia/GR00T-N1.7-3B}"
+MODEL_PATH="${1:-nvidia/GR00T-N1.6-3B}"
 EMBODIMENT_TAG="${2:-ROBOCASA_PANDA_OMRON}"
 PORT="${3:-5555}"
 

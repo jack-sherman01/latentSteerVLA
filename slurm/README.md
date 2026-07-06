@@ -73,7 +73,7 @@ python scripts/05_train_encoders.py --rank 16
 ### 7. Main evaluation (Phase 4)
 
 ```bash
-# GR00T N1-2B (primary)
+# GR00T N1.6-3B (primary)
 sbatch slurm/06_eval_compsteer.slurm groot svd 16 cosine
 
 # RDT-1B (secondary backbone)

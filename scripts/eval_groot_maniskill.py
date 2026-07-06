@@ -35,7 +35,7 @@ from compsteer.eval.raw_groot_runner import RawGr00tManiSkillRunner, save_raw_re
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Raw GR00T rollout on ManiSkill (no steering)")
-    p.add_argument("--model_path", default="nvidia/GR00T-N1.7-3B")  # NOT N1-2B, see slurm/eval_groot_robocasa.sh
+    p.add_argument("--model_path", default="nvidia/GR00T-N1.6-3B")  # NOT N1-2B or N1.7-3B, see scripts/run_groot_server.sh
     p.add_argument("--embodiment", default="panda",
                     help="Key in configs/embodiments.yaml, or 'all'. Ignored if --robot_uid is set.")
     p.add_argument("--robot_uid", default=None, help="Ad-hoc ManiSkill robot_uid, bypasses --embodiment")

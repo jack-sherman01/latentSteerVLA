@@ -13,8 +13,17 @@ paths:
 # ── Base VLA models ───────────────────────────────────────────────────────
 models:
   groot:
-    hf_path: "nvidia/GR00T-N1-2B"     # HuggingFace model ID
-    hidden_size: 1536                  # DiT hidden dim (N1-2B)
+    hf_path: "nvidia/GR00T-N1.6-3B"   # HuggingFace model ID. NOT N1-2B or N1.7-3B,
+                                       # see scripts/run_groot_server.sh: Isaac-GR00T is
+                                       # pinned to n1.6.1-release, which only recognizes
+                                       # the Gr00tN1d6 architecture (N1.6-3B).
+    hidden_size: 1536                  # DiT hidden dim — inferred from N1.6-3B's
+                                       # config.json (num_attention_heads=32 *
+                                       # attention_head_dim=48 = input_embedding_dim
+                                       # 1536); NOT the same as the top-level
+                                       # config.json "hidden_size" field (1024).
+                                       # Verify against the actual action_encoder
+                                       # output shape before relying on this.
     action_horizon: 16                 # Action chunk length
     num_inference_steps: 10            # Flow matching denoising steps
     device: "cuda"

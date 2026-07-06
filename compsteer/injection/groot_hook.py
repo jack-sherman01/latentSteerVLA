@@ -42,7 +42,7 @@ class SteerableGr00tPolicy:
     Usage:
         from gr00t.eval.service import Gr00tPolicy
         base_policy = Gr00tPolicy(
-            model_path="nvidia/GR00T-N1-2B",
+            model_path="nvidia/GR00T-N1.6-3B",
             embodiment_tag="panda",
             ...
         )

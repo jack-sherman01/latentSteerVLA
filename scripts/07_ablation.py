@@ -63,7 +63,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--ablation_type",   required=True,
                    choices=["rank", "factorize_method", "schedule", "library_size", "all"])
     p.add_argument("--backbone",        default="groot", choices=["groot", "groot_1b", "rdt1b"])
-    p.add_argument("--model_path",      default="nvidia/GR00T-N1-2B")
+    p.add_argument("--model_path",      default="nvidia/GR00T-N1.6-3B")  # NOT N1-2B, see scripts/run_groot_server.sh
     p.add_argument("--library_root",    default="steering_library")
     p.add_argument("--num_episodes",    type=int,   default=20,
                    help="Episodes per cell (use fewer for faster ablation sweep)")

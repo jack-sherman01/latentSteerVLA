@@ -84,7 +84,7 @@ class CompSteerEvaluator:
         num_envs: int = 8,
         eval_seed: int = 100,
         backbone: str = "groot",
-        model_path: str = "nvidia/GR00T-N1-2B",
+        model_path: str = "nvidia/GR00T-N1.6-3B",  # NOT N1-2B, see scripts/run_groot_server.sh
         injection_mode: str = "hidden",
         compose_alpha: float = 1.0,
         compose_beta: float = 1.0,

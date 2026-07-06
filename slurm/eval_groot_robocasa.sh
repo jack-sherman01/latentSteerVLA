@@ -37,7 +37,7 @@
 #
 # Known unverified assumptions (check the job log for these on first run):
 #   - Compute nodes on this cluster may not have internet access, in which
-#     case the GR00T-N1.7-3B checkpoint download from Hugging Face will hang
+#     case the GR00T-N1.6-3B checkpoint download from Hugging Face will hang
 #     or fail. If so, pre-download it on the login node into $HF_CACHE
 #     first (see bottom of this file) and re-run with the cache warm.
 #   - The RoboCasa venv setup (scripts/setup_robocasa_env.sh) does its own
@@ -57,9 +57,13 @@ ROBOCASA_DATA="/work/hezhang/robocasa_data"   # persistent isolated venv + ~10GB
 HF_CACHE="/work/hezhang/hf_cache"             # persistent GR00T checkpoint cache (NOT $HOME — quota)
 SCRATCH="/tmp/${SLURM_JOB_ID:-manual}"        # node-local scratch for apptainer's own tmp/cache
 
-MODEL_PATH="nvidia/GR00T-N1.7-3B"   # NOT N1-2B — this repo's cloned Isaac-GR00T
-                                     # main branch only registers the Gr00tN1d7
-                                     # architecture; older checkpoints 404 on load
+MODEL_PATH="nvidia/GR00T-N1.6-3B"   # NOT N1.7-3B (its statistics.json doesn't
+                                     # include robocasa_panda_omron, despite the
+                                     # tag existing in its EmbodimentTag enum) and
+                                     # NOT N1-2B (Isaac-GR00T is pinned to
+                                     # n1.6.1-release in the Dockerfile to match
+                                     # this checkpoint's Gr00tN1d6 architecture —
+                                     # see scripts/run_groot_server.sh)
 EMBODIMENT_TAG="ROBOCASA_PANDA_OMRON"
 PORT=5555
 
@@ -86,17 +90,16 @@ BINDS=(-B "${REPO}:/workspace/compsteer")
 BINDS+=(-B "${ROBOCASA_DATA}:/workspace/Isaac-GR00T/gr00t/eval/sim/robocasa/robocasa_uv")
 BINDS+=(-B "${HF_CACHE}:/opt/hf_cache")
 
-if [ -z "${HF_TOKEN:-}" ]; then
-    echo "ERROR: HF_TOKEN is not set. GR00T-N1.7-3B's vision-language backbone"
-    echo "(nvidia/Cosmos-Reason2-2B) is a gated HF repo — request access at"
-    echo "https://huggingface.co/nvidia/Cosmos-Reason2-2B, create a token at"
-    echo "https://huggingface.co/settings/tokens, then:"
-    echo "  export HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx"
-    echo "before running sbatch (it's inherited into the job's environment)."
-    exit 1
+# NOTE: unlike N1.7-3B (which needed a token for the gated nvidia/Cosmos-Reason2-2B
+# backbone), N1.6-3B does NOT require HF_TOKEN — confirmed by a live server run:
+# it only fetches its own 2 safetensors shards ("Fetching 2 files"), and the
+# "nvidia/Eagle-Block2A-2B-v2" name in its config.json is just descriptive
+# metadata about the backbone architecture, not a separate download. HF_TOKEN
+# is passed through below only in case a private/gated mirror is ever used.
+APP_ENV=(--env "HF_HOME=/opt/hf_cache" --env "UV_LINK_MODE=copy")
+if [ -n "${HF_TOKEN:-}" ]; then
+    APP_ENV+=(--env "HF_TOKEN=${HF_TOKEN}")
 fi
-
-APP_ENV=(--env "HF_HOME=/opt/hf_cache" --env "UV_LINK_MODE=copy" --env "HF_TOKEN=${HF_TOKEN}")
 
 echo "======================================"
 echo "GR00T x RoboCasa raw eval"
@@ -168,17 +171,16 @@ echo "Done. Results -> $REPO/$RESULTS_DIR"
 
 # ── Optional: pre-warm the HF checkpoint cache from the login node ────────
 # If compute nodes lack internet access, run this once on fe01 BEFORE
-# submitting, so the job above finds the checkpoint already cached. Requires
-# HF_TOKEN (see the check above — GR00T-N1.7-3B's vision-language backbone,
-# nvidia/Cosmos-Reason2-2B, is a gated repo):
+# submitting, so the job above finds the checkpoint already cached. No
+# HF_TOKEN needed — nvidia/GR00T-N1.6-3B is fully public (confirmed via a live
+# server run: it only fetches its own 2 safetensors shards, no separate
+# gated backbone download):
 #   module load apptainer-1.4.1
 #   export HF_HOME=/work/hezhang/hf_cache
-#   export HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx
 #   apptainer exec --nv -B /work/hezhang/hf_cache:/opt/hf_cache \
-#       --env HF_HOME=/opt/hf_cache --env HF_TOKEN="$HF_TOKEN" \
+#       --env HF_HOME=/opt/hf_cache \
 #       /work/hezhang/docker_images/compsteer-groot.sif \
 #       python -c "
 #   from huggingface_hub import snapshot_download
-#   snapshot_download('nvidia/GR00T-N1.7-3B')
-#   snapshot_download('nvidia/Cosmos-Reason2-2B')
+#   snapshot_download('nvidia/GR00T-N1.6-3B')
 #   "
