@@ -24,13 +24,14 @@ fi
 cd "$GR00T_ROOT"
 
 echo "Setting up RoboCasa venv (robosuite + robocasa)..."
+# setup_RoboCasa.sh (Isaac-GR00T's own script) already installs everything and
+# downloads the kitchen assets itself (echo y | python download_kitchen_assets.py,
+# with macro setup as a side effect of that) — do NOT re-run either step here.
+# A second, unpiped call to download_kitchen_assets crashes with EOFError when
+# run non-interactively (confirmed: input() has no stdin under apptainer exec),
+# and since this script uses `set -e`, that crash aborted before touch "$MARKER"
+# ever ran, even though the venv itself had already been built successfully.
 bash gr00t/eval/sim/robocasa/setup_RoboCasa.sh
-
-echo "Configuring RoboCasa system macros..."
-"${ROBOCASA_VENV}/bin/python" -m robocasa.scripts.setup_macros
-
-echo "Downloading RoboCasa kitchen assets (~10GB, one-time)..."
-"${ROBOCASA_VENV}/bin/python" -m robocasa.scripts.download_kitchen_assets
 
 touch "$MARKER"
 echo "RoboCasa environment ready → $ROBOCASA_VENV"
