@@ -83,6 +83,20 @@ export APPTAINER_TMPDIR="$SCRATCH/apptainer_tmp"
 export APPTAINER_CACHEDIR="$SCRATCH/apptainer_cache"
 mkdir -p "$APPTAINER_TMPDIR" "$APPTAINER_CACHEDIR"
 
+# --writable-tmpfs backs the container's writable layer with a small
+# fixed-size tmpfs that's nowhere near big enough for the RoboCasa venv build
+# (torch + cuda libs + flash-attn + robosuite + opencv/scipy easily hits
+# several GB) — confirmed via "No space left on device" mid-build on a real
+# run. --overlay pointing at a plain node-local scratch directory instead
+# uses real disk (apptainer auto-creates upper/work subdirs in it), with no
+# meaningful size cap.
+# Separate overlay dirs for the server (runs the whole time, backgrounded)
+# and the client (setup+eval, runs concurrently with it) — two simultaneous
+# apptainer instances must not share one overlay's upper/work dirs.
+SERVER_OVERLAY="$SCRATCH/overlay_server"
+CLIENT_OVERLAY="$SCRATCH/overlay_client"
+mkdir -p "$SERVER_OVERLAY" "$CLIENT_OVERLAY"
+
 # Bind the live repo checkout over the image's baked-in copy (so config/
 # script edits don't require rebuilding the .sif), the persistent RoboCasa
 # venv+assets cache, and the persistent HF checkpoint cache.
@@ -134,7 +148,7 @@ echo "======================================"
 
 # ── 1. Start the GR00T policy server in the background ────────────────────
 SERVER_LOG="logs/robocasa_eval_${SLURM_JOB_ID:-manual}_server.log"
-apptainer exec --nv --cleanenv --writable-tmpfs "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
+apptainer exec --nv --cleanenv --overlay "$SERVER_OVERLAY" "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
     bash /workspace/compsteer/scripts/run_groot_server.sh "$MODEL_PATH" "$EMBODIMENT_TAG" "$PORT" \
     > "$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
@@ -174,19 +188,25 @@ fi
 # loading yet — a short grace period before hammering it with rollouts.
 sleep 30
 
-# ── 3. One-time (idempotent) RoboCasa venv + kitchen asset setup ──────────
-apptainer exec --nv --cleanenv --writable-tmpfs "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
-    bash /workspace/compsteer/scripts/setup_robocasa_env.sh
-
-# ── 4. Run the RoboCasa client eval across the requested tasks ────────────
+# ── 3+4. RoboCasa venv/asset setup, then the client eval — ONE apptainer
+# invocation, not two: setup_robocasa_env.sh builds (or symlink-restores)
+# robocasa_uv/.venv inside this container instance's own ephemeral
+# filesystem (robocasa_uv itself isn't bind-mounted — see the BINDS comment
+# above), so if setup ran as a separate `apptainer exec` call, that venv/
+# symlink would vanish before the eval step's own fresh instance could see
+# it. Running both in the same invocation keeps them in the same filesystem.
 RESULTS_DIR="results/raw_groot/robocasa_${SLURM_JOB_ID:-manual}"
-apptainer exec --nv --cleanenv --writable-tmpfs "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
-    python /workspace/compsteer/scripts/eval_groot_robocasa.py \
-        --tasks "${TASKS[@]}" \
-        --n_episodes "$N_EPISODES" \
-        --policy_host 127.0.0.1 \
-        --policy_port "$PORT" \
-        --results_root "/workspace/compsteer/$RESULTS_DIR"
+apptainer exec --nv --cleanenv --overlay "$CLIENT_OVERLAY" "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
+    bash -c '
+        set -e
+        bash /workspace/compsteer/scripts/setup_robocasa_env.sh
+        python /workspace/compsteer/scripts/eval_groot_robocasa.py \
+            --tasks "$@" \
+            --n_episodes "'"$N_EPISODES"'" \
+            --policy_host 127.0.0.1 \
+            --policy_port "'"$PORT"'" \
+            --results_root "/workspace/compsteer/'"$RESULTS_DIR"'"
+    ' _ "${TASKS[@]}"
 
 echo "Done. Results -> $REPO/$RESULTS_DIR"
 
