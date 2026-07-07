@@ -89,13 +89,13 @@ def run_task(args: argparse.Namespace, task_id: str, task_cfg: dict, robocasa_py
     cmd = [
         robocasa_python,
         "gr00t/eval/rollout_policy.py",
-        "--n-episodes", str(args.n_episodes),
-        "--policy-client-host", args.policy_host,
-        "--policy-client-port", str(args.policy_port),
-        "--max-episode-steps", str(max_steps),
-        "--env-name", env_name,
-        "--n-action-steps", str(args.n_action_steps),
-        "--n-envs", str(args.n_envs),
+        "--n_episodes", str(args.n_episodes),
+        "--policy_client_host", args.policy_host,
+        "--policy_client_port", str(args.policy_port),
+        "--max_episode_steps", str(max_steps),
+        "--env_name", env_name,
+        "--n_action_steps", str(args.n_action_steps),
+        "--n_envs", str(args.n_envs),
     ]
 
     print(f"\n=== {task_id} ({env_name}) ===")
