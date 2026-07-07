@@ -46,8 +46,17 @@ if [ -f "$MARKER" ]; then
     mkdir -p "$ROBOCASA_UV"
     ln -sfn "$PERSIST_VENV" "$ROBOCASA_VENV"
     for rel in "${ASSET_DIRS[@]}"; do
-        mkdir -p "$(dirname "${ROBOCASA_REPO}/${rel}")"
-        ln -sfn "${PERSIST_ASSETS}/${rel}" "${ROBOCASA_REPO}/${rel}"
+        dst="${ROBOCASA_REPO}/${rel}"
+        mkdir -p "$(dirname "$dst")"
+        # robocasa ships small git-tracked files under some of these paths
+        # (e.g. fixture_registry/), so dst may already exist as a real
+        # directory here. ln -sfn on an existing real directory nests the
+        # symlink inside it instead of replacing it — wipe any non-symlink
+        # first so the persisted assets end up directly at $dst.
+        if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+            rm -rf "$dst"
+        fi
+        ln -sfn "${PERSIST_ASSETS}/${rel}" "$dst"
     done
     echo "RoboCasa environment ready (restored from cache) → $ROBOCASA_VENV"
     exit 0
