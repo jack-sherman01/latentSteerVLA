@@ -31,7 +31,7 @@ SERVER_OVERLAY="$SCRATCH/overlay_server"
 CLIENT_OVERLAY="$SCRATCH/overlay_client"
 mkdir -p "$SERVER_OVERLAY" "$CLIENT_OVERLAY"
 
-BINDS=(-B "${REPO}:/workspace/compsteer")
+BINDS=(-B "${REPO}:./compsteer")
 BINDS+=(-B "${ROBOCASA_DATA}:/opt/robocasa_persist")
 BINDS+=(-B "${HF_CACHE}:/opt/hf_cache")
 
@@ -54,7 +54,7 @@ echo "======================================"
 
 SERVER_LOG="logs/robocasa_eval_${SLURM_JOB_ID:-manual}_server.log"
 # apptainer exec --nv --cleanenv --overlay "$SERVER_OVERLAY" "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
-bash /workspace/compsteer/scripts/run_groot_server.sh "$MODEL_PATH" "$EMBODIMENT_TAG" "$PORT" \
+bash ./compsteer/scripts/run_groot_server.sh "$MODEL_PATH" "$EMBODIMENT_TAG" "$PORT" \
     > "$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
 
@@ -98,13 +98,13 @@ RESULTS_DIR="results/raw_groot/robocasa_${SLURM_JOB_ID:-manual}"
 # apptainer exec --nv --cleanenv --overlay "$CLIENT_OVERLAY" "${BINDS[@]}" "${APP_ENV[@]}" "$SIF" \
 bash -c '
         set -e
-        bash /workspace/compsteer/scripts/setup_robocasa_env.sh
-        python /workspace/compsteer/scripts/eval_groot_robocasa.py \
+        bash ./compsteer/scripts/setup_robocasa_env.sh
+        python ./compsteer/scripts/eval_groot_robocasa.py \
             --tasks "$@" \
             --n_episodes "'"$N_EPISODES"'" \
             --policy_host 127.0.0.1 \
             --policy_port "'"$PORT"'" \
-            --results_root "/workspace/compsteer/'"$RESULTS_DIR"'"
+            --results_root "./compsteer/'"$RESULTS_DIR"'"
     ' _ "${TASKS[@]}"
 
 echo "Done. Results -> $REPO/$RESULTS_DIR"
