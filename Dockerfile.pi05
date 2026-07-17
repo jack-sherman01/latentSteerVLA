@@ -1,0 +1,55 @@
+# syntax=docker/dockerfile:1
+#
+# π0.5 (pi05) VLA fine-tuning image — LeRobot-native stack.
+#
+# Why LeRobot instead of Physical Intelligence's openpi: our dataset
+# (lucazanett/circular_obj_30fps) is a LeRobot **v3.0** dataset, while openpi
+# pins a v2.1-era lerobot whose loader rejects v3.0 datasets. LeRobot ships a
+# PyTorch port of pi05 (adapted from openpi) plus converted base checkpoints
+# (lerobot/pi05_base), and its trainer consumes v3.0 datasets directly.
+#
+# Build:
+#   docker compose build pi05-finetune
+#   # or: docker build -f Dockerfile.pi05 -t compsteer-pi05 .
+#
+# Run: see the `pi05-finetune` service in docker-compose.yml for the full
+# fine-tuning command.
+
+ARG CUDA_IMAGE=nvidia/cuda:12.8.0-runtime-ubuntu22.04
+FROM ${CUDA_IMAGE}
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    NVIDIA_DRIVER_CAPABILITIES=all \
+    HF_HOME=/root/.cache/huggingface
+
+# ffmpeg: torchcodec/PyAV decoding of LeRobot v3 dataset videos (our dataset's
+# streams are AV1 — decoded by dav1d, bundled with ubuntu's ffmpeg).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git git-lfs curl ca-certificates build-essential \
+        ffmpeg libgl1 libglib2.0-0 \
+    && git lfs install \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}"
+
+# lerobot 0.6.x requires Python >=3.12 (ubuntu 22.04 ships 3.10) — let uv
+# provide a standalone interpreter.
+ARG PYTHON_VERSION=3.12
+ARG LEROBOT_VERSION=0.6.0
+RUN uv venv /opt/venv --python ${PYTHON_VERSION}
+ENV VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:${PATH}"
+
+# [pi]       → transformers (PaliGemma VLM backbone used by pi0/pi05)
+# [training] → lerobot-train CLI deps: datasets, torchcodec, wandb, accelerate
+RUN uv pip install --no-cache-dir "lerobot[pi,training]==${LEROBOT_VERSION}"
+
+# peft: LoRA fine-tuning support (lerobot's --peft.* options; version range
+# matches lerobot's own peft-dep pin). Separate layer to keep the big install
+# layer cached.
+RUN uv pip install --no-cache-dir "peft>=0.18.0,<1.0.0"
+
+WORKDIR /workspace
+CMD ["/bin/bash"]

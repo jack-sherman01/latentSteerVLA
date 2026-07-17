@@ -102,6 +102,39 @@ services:
     tty: true
     command: ["/bin/bash"]
 
+  # π0.5 VLA fine-tuning on our LeRobot v3.0 dataset (see Dockerfile.pi05).
+  #
+  #   docker compose build pi05-finetune
+  #   ./finetune_pi05.sh                  # training (all knobs env-overridable)
+  #   docker compose run --rm pi05-finetune python scripts/eval_pi05_offline.py \
+  #       --checkpoint outputs/pi05_circular_obj/checkpoints/last/pretrained_model
+  #
+  # Memory knobs for the local 48GB RTX 6000 Ada: keep gradient_checkpointing
+  # on; if it still OOMs, lower BATCH_SIZE or add --policy.train_expert_only=true
+  # (freezes the VLM, trains only the ~300M action expert + projections).
+  pi05-finetune:
+    build:
+      context: .
+      dockerfile: Dockerfile.pi05
+    image: compsteer-pi05:latest
+    <<: *gpu
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    environment:
+      - HF_HOME=/root/.cache/huggingface
+      - HF_TOKEN
+      - WANDB_API_KEY
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    volumes:
+      - ./outputs/pi05:/workspace/outputs
+      - ./scripts:/workspace/scripts
+      - hf_cache:/root/.cache/huggingface
+    stdin_open: true
+    tty: true
+    command: ["/bin/bash"]
+
 volumes:
   hf_cache:
   robocasa_data:
