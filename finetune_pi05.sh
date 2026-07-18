@@ -60,13 +60,13 @@ fi
 OUTPUT_DIR="/workspace/outputs/${JOB_NAME}"
 
 if [[ "${RESUME}" == "true" ]]; then
-    exec docker compose run --rm pi05-finetune lerobot-train \
+    exec docker compose run --rm --name "hzhang_${JOB_NAME}" --label owner=hzhang pi05-finetune lerobot-train \
         --resume=true \
         --config_path="${OUTPUT_DIR}/checkpoints/last/pretrained_model/train_config.json" \
         "$@"
 fi
 
-exec docker compose run --rm pi05-finetune lerobot-train \
+exec docker compose run --rm --name "hzhang_${JOB_NAME}" --label owner=hzhang pi05-finetune lerobot-train \
     --dataset.repo_id="${DATASET}" \
     --policy.type=pi05 \
     --policy.pretrained_path="${PRETRAINED}" \

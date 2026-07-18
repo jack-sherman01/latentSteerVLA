@@ -19,10 +19,10 @@ cd /home/hzhang/work/latentSteerVLA
 export HF_TOKEN=$(cat ~/.cache/huggingface/token)
 eval "$(grep '^export WANDB_API_KEY=' ~/.bashrc)"
 
-CONTAINER=pi05-finetune-pbs
+CONTAINER=hzhang_pi05_cart_imp_lora
 trap 'docker rm -f "$CONTAINER" >/dev/null 2>&1 || true' EXIT TERM INT
 
-docker compose run --rm --name "$CONTAINER" pi05-finetune lerobot-train \
+docker compose run --rm --name "$CONTAINER" --label owner=hzhang pi05-finetune lerobot-train \
     --resume=true \
     --config_path=/workspace/outputs/pi05_cart_imp_lora/checkpoints/last/pretrained_model/train_config.json \
     2>&1 | tee logs/pi05_cart_imp_resume.log
